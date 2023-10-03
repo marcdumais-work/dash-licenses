@@ -1,0 +1,9 @@
+{
+    "dependencyFile": "package-lock.json",
+    "project": "zzzecd.cdt-cloudzzz",
+    "review": false,
+    "exclusions": "dashLicensesExclusions.json",
+    "summary": "dependency-check-summary.txt",
+    "timeout": 242,
+    "batch": 52
+}
