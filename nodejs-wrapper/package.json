@@ -1,0 +1,30 @@
+{
+  "name": "dash-licenses-github-integration",
+  "version": "1.0.12",
+  "description": "npm package that makes it easier to integrate dash-licenses to Eclipse Foundation JS/TS projects on GitHub",
+  "main": "src/check_3pp_licenses.js",
+  "bin": {
+    "license-check": "src/check_3pp_licenses.js"
+  },
+  "scripts": {
+    "license:check": "src/check_3pp_licenses.js", 
+    "license:check:review": "src/check_3pp_licenses.js --inputFile=./yarn.lock --review --project=ecd.cdt-cloud", 
+    "test": "test",
+    "package": "npm pack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eclipse/dash-licenses.git"
+  },
+  "keywords": [
+    "GitHub",
+    "dash-license",
+    "integration"
+  ],
+  "author": "Ericsson and others",
+  "license": "EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0",
+  "bugs": {
+    "url": "https://github.com/eclipse/dash-licenses/issues"
+  },
+  "homepage": "https://github.com/eclipse/dash-licenses#readme"
+}
