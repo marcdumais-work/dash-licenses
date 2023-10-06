@@ -23,7 +23,7 @@ A configuration file can be used to override defaults.
 {
     "project": "ecd.theia",
     "review": true,
-    "dependencyFile": "./package-lock.json",
+    "inputFile": "./package-lock.json",
     "batch": "50",
     "timeout": "240",
     "exclusionsFile": "./dashLicensesExclusions.json",

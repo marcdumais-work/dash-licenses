@@ -1,5 +1,5 @@
 {
-    "dependencyFile": "package-lock.json",
+    "inputFile": "package-lock.json",
     "project": "zzzecd.cdt-cloudzzz",
     "review": false,
     "exclusions": "dashLicensesExclusions.json",

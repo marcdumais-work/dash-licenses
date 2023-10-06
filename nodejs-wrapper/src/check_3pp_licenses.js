@@ -26,6 +26,7 @@ const dashLicensesJar = path.resolve(__dirname, 'download/dash-licenses.jar');
 const dashLicensesDownloadUrl = 'https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST';
 const dashLicensesInternalError = 127;
 
+// the parameters meant to be passed when calling dash-licenses
 const dashParams = [
     "batch",
     "project",
@@ -34,124 +35,66 @@ const dashParams = [
     "timeout",
 ];
 
-
-// to extract CLI parameters
-const projectNameRegexp = /--project=(\S+).*/;
-const depsInputFileRegexp = /--inputFile=(\S+).*/;
-const configFileRegexp = /--config=(\S+).*/;
-const exclusionsRegexp = /--exclusions=(\S+).*/;
-
 // CLI parameters accepted by the script, and corresponding 
-// Regexp to parse tje,
-const wrapperCLI = {
-    "project": /--project=(\S+).*/,
-    "inputFile": /--inputFile=(\S+).*/,
-    "config": /--config=(\S+).*/,
-    "exclusions": /--exclusions=(\S+).*/,
-    "dryRun": /--dryRun/,
-    "review": /--review/
+// Regexp to parse them
+const wrapperCLIRegexps = {
+    "config": /--(config)=(\S+).*/,
+    "dryRun": /--(dryRun)/,
+    "exclusions": /--(exclusions)=(\S+).*/,
+    "inputFile": /--(inputFile)=(\S+).*/,
+    "project": /--(project)=(\S+).*/,
+    "review": /--(review)/
 };
+// const supportedWrapperCLI = Object.keys(wrapperCLIRegexps);
+const parsedCLI = {};
 
 // default for configurable parameters
-// Note: We do not handle the Gitlab token. Instead, an environment variable should be used. dash-licenses 
-// will use it directly from there.
+// Note: We do not handle the Gitlab token. Instead, an environment variable should be used
+// values defined in a config file or on the CLI can override defaults.
 const dashLicensesConfig = {
-    // default config file, to fine-tune dash-licenses options
-    "externalConfig": "dashLicensesConfig.json",
-    // Eclipse Foundation project name. e.g. "ecd.theia", "ecd.cdt-cloud"
-    "project": "none",
-    // Use dash-license "review" mode, to automatically create IP tickets for any suspicious dependencies? 
-    "review": false,
-    // File where dependencies are defined. Passed as-it to dash-licenses
-    "dependencyFile": "yarn.lock",
     // Batch size. Passed as-it to dash-licenses
     "batch": 50,
-    // Timeout. Passed as-it to dash-licenses
-    "timeout": 240,
+    // default config file, to fine-tune dash-licenses options
+    "config": "dashLicensesConfig.json",
+    // Run in dry run mode
+    "dryRun": false,
     // File where exclusions are defined. Any excluded dependency will not cause
     // this wrapper to exit with an error status (on its own) or be reported in
     // the post-run status as requiring more scrutiny
     "exclusions": "dependency-check-baseline.json",
+    // File where dependencies are defined. Passed as-it to dash-licenses
+    "inputFile": "yarn.lock",
+    // Eclipse Foundation project name. e.g. "ecd.theia", "ecd.cdt-cloud"
+    "project": "none",
+    // Use dash-license "review" mode, to automatically create IP tickets for any suspicious dependencies? 
+    "review": false,
     // Summary file, in which dash-licenses will save its findings
-    "summary": "dependency-check-summary.txt"
+    "summary": "dependency-check-summary.txt",
+    // Timeout. Passed as-it to dash-licenses
+    "timeout": 240
 };
 
+// skip first 2 entries that are not CLI params
+parseCLI(process.argv.slice(2));
 
-
-// Before proceeding, we need to check whether there's a CLI option used 
-// to point us to a non-default config file
-const configCLI = process.argv.find(arg => configFileRegexp.exec(arg));
-if (configCLI) {
-     const cfg = configCLI.replace(configFileRegexp, '$1');
-     if (fs.existsSync(cfg)) {
-        dashLicensesConfig["externalConfig"] = cfg;
-     } else {
-        warn(`Config file provided on CLI does not exist: "${cfg}" - ignoring`);
-     }
+// config file provided on CLI? ->  override default
+if ("config" in parsedCLI) {
+    const cfg = path.resolve(String(parsedCLI["config"]));
+    dashLicensesConfig["config"] = cfg;
 }
 
-// config file to use
-const configFile = dashLicensesConfig["externalConfig"];
-
-
-// config file, potentially present in the workspace
-const dashLicensesWorkspaceConfig = path.resolve(configFile);
-if (fs.existsSync(dashLicensesWorkspaceConfig)) {
-    const wsConfig = JSON.parse(fs.readFileSync(dashLicensesWorkspaceConfig, 'utf8'));
-    // prefer config file entries vs defaults
-    const wsConfigKeys = Object.keys(wsConfig);
-    wsConfigKeys.map(k => {
-        const value = wsConfig[k];
-        // only consider known parameters
-        if(Object.keys(dashLicensesConfig).includes(k)) {
-            // exclude undefined values and also empty or white-space strings
-            if (value !== undefined && (typeof value != 'string' || value.trim() != "")) {
-                dashLicensesConfig[k] = wsConfig[k];    
-            } else {
-                warn(`(${path.basename(dashLicensesWorkspaceConfig)}) - config file entry "${k}" is undefined - ignoring it`); 
-            }
-        }
-    });
-}
-
-// CLI parameters have highest priority - use any passed this way over default 
-// or config file values
-if (process.argv.includes('--review')) {
-    dashLicensesConfig["review"] = true;    
-}
-
-const projectNameCLI = process.argv.find(arg => projectNameRegexp.exec(arg));
-if (projectNameCLI) {
-    dashLicensesConfig["project"] = projectNameCLI.replace(projectNameRegexp, '$1');
-}
-
-const depFileCLI = process.argv.find(arg => depsInputFileRegexp.exec(arg));
-if (depFileCLI) {
-    dashLicensesConfig["dependencyFile"] = depFileCLI.replace(depsInputFileRegexp, '$1');
-}
-
-const exclusionsCLI = process.argv.find(arg => exclusionsRegexp.exec(arg));
-if (exclusionsCLI) {
-    dashLicensesConfig["exclusions"] = exclusionsCLI.replace(exclusionsRegexp, '$1');
-}
-
-function parseCLI() {
-    Object.keys(dashLicensesConfig).map(k => {
-        info(`${k} -> ${dashLicensesConfig[k]}`);
-    });
-}
+applyConfigFile(dashLicensesConfig["config"]);
+applyCLIArgs();
 
 info("Effective configuration: ");
 info("-------------------------------------");
-Object.keys(dashLicensesConfig).map(k => {
-    info(`${k} -> ${dashLicensesConfig[k]}`);
-});
-info("-------------------------------------");
+info(JSON.stringify(dashLicensesConfig));
+info("-------------------------------------\n");
 
 // review mode has further requirements that may force us to reconsider
 let autoReviewMode = dashLicensesConfig["review"];
 const projectName = dashLicensesConfig["project"]
-const depsInputFile = dashLicensesConfig["dependencyFile"]
+const depsInputFile = dashLicensesConfig["inputFile"]
 
 // The following are not at this time configurable through the CLI:
 const dashLicensesExclusionsFile = dashLicensesConfig["exclusions"];
@@ -261,6 +204,65 @@ async function main() {
     }
     info('Done.');
     process.exit(0);
+}
+
+function parseCLI(CLIArgs) {
+    // Go through all CLI arguments
+    CLIArgs.forEach(CLIArg => {
+        // look for regexp match to parse this arg
+        Object.values(wrapperCLIRegexps).find( rx => {
+            // info(`Candidate Regexp... Trying to match ${rx}`);
+            const RegexpResult = rx.exec(CLIArg);
+            if(RegexpResult) {
+                // info("Success! Matching Regexp: " + rx);
+                // parse arg - some have no "value" part
+                const [arg, val] = CLIArg.replace(rx, (_, group1, group2) => group2 ? `${group1} ${group2}` : group1).split(' ');
+                // info(`*** cli: ${arg}, val: ${val} `);
+                parsedCLI[arg] = val || true;
+                // found the right regexp - stop looking
+                return RegexpResult;
+            }
+        });
+    });
+    info("CLI arguments: ");
+    info("-------------------------------------");
+    info(JSON.stringify(parsedCLI));
+    info("-------------------------------------\n");
+}
+
+function applyConfigFile(file) {
+    const dashLicensesWorkspaceConfig = path.resolve(file);
+    if (fs.existsSync(dashLicensesWorkspaceConfig)) {
+        const wsConfig = JSON.parse(fs.readFileSync(dashLicensesWorkspaceConfig, 'utf8'));
+        // prefer config file entries vs defaults
+        const wsConfigKeys = Object.keys(wsConfig);
+        wsConfigKeys.map(k => {
+            const value = wsConfig[k];
+            // only consider known parameters
+            if (k in dashLicensesConfig) {
+                // exclude undefined values and also empty or white-space strings
+                if (value !== undefined && (typeof value != 'string' || value.trim() != "")) {
+                    dashLicensesConfig[k] = wsConfig[k];    
+                } else {
+                    warn(`(${path.basename(dashLicensesWorkspaceConfig)}) - config file entry "${k}" is undefined - ignoring it`); 
+                }
+            } else {
+                warn(`Unknown config file entry: \"${k}\" - ignoring it"`);
+            }
+        });
+    }
+}
+
+function applyCLIArgs() {
+    // CLI parameters have highest priority - use any passed this way over default 
+    // or config file values
+    Object.keys(parsedCLI).map(k => {
+        const value = parsedCLI[k];
+        // info(`**** key: "${k}", value: ${value}`);
+        if (k in dashLicensesConfig) {
+            dashLicensesConfig[k] = value;
+        }
+    });
 }
 
 /**
