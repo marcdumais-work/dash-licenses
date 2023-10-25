@@ -25,8 +25,9 @@ const NO_COLOR = Boolean(process.env['NO_COLOR']);
 const dashLicensesJar = path.resolve(__dirname, 'download/dash-licenses.jar');
 const dashLicensesDownloadUrl = 'https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST';
 const dashLicensesInternalError = 127;
+const parsedCLI = {};
 
-// the parameters meant to be passed when calling dash-licenses
+// CLI parameters meant to be passed when calling dash-licenses
 const dashParams = [
     "batch",
     "project",
@@ -35,7 +36,7 @@ const dashParams = [
     "timeout",
 ];
 
-// CLI parameters accepted by the script, and corresponding 
+// CLI parameters accepted by this script, and corresponding 
 // Regexp to parse them
 const wrapperCLIRegexps = {
     "config": /--(config)=(\S+).*/,
@@ -45,10 +46,8 @@ const wrapperCLIRegexps = {
     "project": /--(project)=(\S+).*/,
     "review": /--(review)/
 };
-// const supportedWrapperCLI = Object.keys(wrapperCLIRegexps);
-const parsedCLI = {};
 
-// default for configurable parameters
+// default values for configurable parameters
 // Note: We do not handle the Gitlab token. Instead, an environment variable should be used
 // values defined in a config file or on the CLI can override defaults.
 const dashLicensesConfig = {
@@ -56,7 +55,7 @@ const dashLicensesConfig = {
     "batch": 50,
     // default config file, to fine-tune dash-licenses options
     "config": "dashLicensesConfig.json",
-    // Run in dry run mode
+    // Run in dry run mode - do not create IP tickets
     "dryRun": false,
     // File where exclusions are defined. Any excluded dependency will not cause
     // this wrapper to exit with an error status (on its own) or be reported in
@@ -74,15 +73,15 @@ const dashLicensesConfig = {
     "timeout": 240
 };
 
-// skip first 2 entries that are not CLI params
+// Parse CLI arguments, skipping first 2 entries that are not CLI params
 parseCLI(process.argv.slice(2));
 
 // config file provided on CLI? ->  override default
 if ("config" in parsedCLI) {
-    const cfg = path.resolve(String(parsedCLI["config"]));
-    dashLicensesConfig["config"] = cfg;
+    dashLicensesConfig["config"] = path.resolve(String(parsedCLI["config"]));
 }
 
+// 
 applyConfigFile(dashLicensesConfig["config"]);
 applyCLIArgs();
 
@@ -211,15 +210,12 @@ function parseCLI(CLIArgs) {
     CLIArgs.forEach(CLIArg => {
         // look for regexp match to parse this arg
         Object.values(wrapperCLIRegexps).find( rx => {
-            // info(`Candidate Regexp... Trying to match ${rx}`);
             const RegexpResult = rx.exec(CLIArg);
             if(RegexpResult) {
-                // info("Success! Matching Regexp: " + rx);
                 // parse arg - some have no "value" part
                 const [arg, val] = CLIArg.replace(rx, (_, group1, group2) => group2 ? `${group1} ${group2}` : group1).split(' ');
-                // info(`*** cli: ${arg}, val: ${val} `);
                 parsedCLI[arg] = val || true;
-                // found the right regexp - stop looking
+                // found the right regexp - find() should stop looking
                 return RegexpResult;
             }
         });
@@ -230,6 +226,11 @@ function parseCLI(CLIArgs) {
     info("-------------------------------------\n");
 }
 
+/**
+ * If it exists, read config file and use parameters/values defined therein,
+ * in preference to the defaults.
+ * @param {string} file 
+ */
 function applyConfigFile(file) {
     const dashLicensesWorkspaceConfig = path.resolve(file);
     if (fs.existsSync(dashLicensesWorkspaceConfig)) {
@@ -253,6 +254,9 @@ function applyConfigFile(file) {
     }
 }
 
+/**
+ * Use parameters/values passed on the CLI, in preference to default or config file values
+ */
 function applyCLIArgs() {
     // CLI parameters have highest priority - use any passed this way over default 
     // or config file values
