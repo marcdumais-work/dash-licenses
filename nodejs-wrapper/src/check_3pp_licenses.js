@@ -36,10 +36,10 @@ const dashParams = [
     "timeout",
 ];
 
-// CLI parameters accepted by this script, and corresponding 
-// Regexp to parse them
+// CLI parameters accepted/processed by this script, and corresponding 
+// Regexps to parse them
 const wrapperCLIRegexps = {
-    "config": /--(config)=(\S+).*/,
+    "configFile": /--(configFile)=(\S+).*/,
     "dryRun": /--(dryRun)/,
     "exclusions": /--(exclusions)=(\S+).*/,
     "inputFile": /--(inputFile)=(\S+).*/,
@@ -54,7 +54,7 @@ const dashLicensesConfig = {
     // Batch size. Passed as-it to dash-licenses
     "batch": 50,
     // default config file, to fine-tune dash-licenses options
-    "config": "dashLicensesConfig.json",
+    "configFile": "dashLicensesConfig.json",
     // Run in dry run mode - do not create IP tickets
     "dryRun": false,
     // File where exclusions are defined. Any excluded dependency will not cause
@@ -82,11 +82,11 @@ resolveConfig();
  */
 function resolveConfig() {
     // config file provided on CLI? ->  override default
-    if ("config" in parsedCLI) {
-        dashLicensesConfig.config = path.resolve(String(parsedCLI.config));
+    if ("configFile" in parsedCLI) {
+        dashLicensesConfig.configFile = path.resolve(String(parsedCLI.configFile));
     }
     // 
-    applyConfigFile(dashLicensesConfig.config);
+    applyConfigFile(dashLicensesConfig.configFile);
     applyCLIArgs();
 
     info("Effective configuration: ");
