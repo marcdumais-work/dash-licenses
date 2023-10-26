@@ -21,7 +21,9 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-const NO_COLOR = Boolean(process.env['NO_COLOR']);
+// const NO_COLOR = Boolean(process.env['NO_COLOR']);
+let noColor = Boolean(process.env['NO_COLOR']);
+
 /** JSON.Stringify() replacer that handles regexps */
 const regExpReplacer = (key, value) => {
     if (value instanceof RegExp) {
@@ -52,6 +54,7 @@ const wrapperCLIRegexps = {
     "exclusions": /--(exclusions)=(\S+).*/,
     "help": /--(help)/,
     "inputFile": /--(inputFile)=(\S+).*/,
+    "noColor": /--(noColor)/,
     "project": /--(project)=(\S+).*/,
     "review": /--(review)/,
     "summary": /--(summary)=(\S+).*/,
@@ -85,6 +88,8 @@ const dashLicensesConfigDefaults = {
     "help": false,
     /** File where dependencies are defined. Passed as-is to dash-licenses */
     "inputFile": "yarn.lock",
+    /** Disable usage of color in this script's output */
+    "noColor": false,
     /** Eclipse Foundation project name. e.g. "ecd.theia", "ecd.cdt-cloud" */
     "project": "",
     /** Use dash-license "review" mode, to automatically create IP tickets for any suspicious dependencies?  */
@@ -287,6 +292,10 @@ function resolveConfig() {
         dashLicensesConfig[k] = (CLIValue || configFileValue || defaultValue);
     });
 
+    if (dashLicensesConfig.noColor || Boolean(process.env['NO_COLOR'])) {
+        noColor = true;
+    }
+
     if (dashLicensesConfig.help) {
         printHelp()
         process.exit(0);
@@ -335,11 +344,6 @@ function parseConfigFile(file) {
                 warn(`Unknown config file entry: \"${k}\" - ignoring it"`);
             }
         });
-        // info("Parsed config file arguments: ");
-        // info(`(From file: ${dashLicensesConfigFile})`);
-        // info("-------------------------------------");
-        // info(getPrintableConfig(configFromFile));
-        // info("-------------------------------------\n");
     } else {
         warn(`Config file not found: ${dashLicensesConfigFile} - ignoring it"`);
     }
@@ -378,25 +382,8 @@ function parseCLI(CLIArgs) {
         warn(getPrintableConfig(wrapperCLIRegexps));
     }
 
-    // info("Parsed CLI arguments: ");
-    // info("-------------------------------------");
-    // info(getPrintableConfig(configFromCLI));
-    // info("-------------------------------------\n");
     return configFromCLI;
 }
-
-/**
- * Use arguments passed on the CLI, in preference to default or config file values
- */
-// function applyConfigCLI() {
-//     Object.keys(dashLicensesConfigFromCLI).map(k => {
-//         const value = dashLicensesConfigFromCLI[k];
-//         // only consider known parameters
-//         if (k in dashLicensesConfig) {
-//             configFromCLI[k] = value;
-//         }
-//     });
-// }
 
 /**
  * @param {Iterable<DashSummaryEntry>} entries
@@ -515,15 +502,15 @@ function info(text) { console.warn(cyan(`INFO: ${text}`)); }
 function warn(text) { console.warn(yellow(`WARN: ${text}`)); }
 function error(text) { console.error(red(`ERROR: ${text}`)); }
 function debug(text) { console.error(gray(`DEBUG: ${text}`)); }
-function help(text) { console.warn(teal(`${text}`)); }
+function help(text) { console.warn(green(`${text}`)); }
 
-function style(code, text) { return NO_COLOR ? text : `\x1b[${code}m${text}\x1b[0m`; }
+function style(code, text) { return noColor ? text : `\x1b[${code}m${text}\x1b[0m`; }
 function cyan(text) { return style(96, text); }
 function magenta(text) { return style(95, text); }
 function yellow(text) { return style(93, text); }
 function red(text) { return style(91, text); }
 function gray(text) { return style(90, text);  }
-function teal(text) { return style(92, text); }
+function green(text) { return style(92, text); }
 
 /**
  * @typedef {object} DashSummaryEntry
