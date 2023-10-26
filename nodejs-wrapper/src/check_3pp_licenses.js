@@ -178,7 +178,7 @@ async function main() {
         stdio: ['ignore', 'inherit', 'inherit']
     });
 
-    const dashError = getErrorFromStatus(dashStatu--inputFile=<file></file>s);
+    const dashError = getErrorFromStatus(dashStatus);
 
     if (dashError) {
         if (dashStatus.status == dashLicensesInternalError) {
