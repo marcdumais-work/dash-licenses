@@ -152,8 +152,7 @@ async function main() {
         info('Backing up previous summary...');
         fs.renameSync(summaryFile, `${summaryFile}.old`);
     }
-    info('Running dash-licenses...');
-    const args = ['-jar', dashLicensesJar, depsInputFile, '-batch', '50', '-timeout', '240', '-summary', summaryFile];
+    const args = ['-jar', dashLicensesJar, depsInputFile, '-batch', batch, '-timeout', timeout, '-summary', summaryFile];
     // use project name if defined - it makes results more precise. e.g. it lets 
     // dash-licenses take into account project-specific "works with" approvals
     if (projectName) {
@@ -167,6 +166,7 @@ async function main() {
         info('Dry-run mode enabled - exiting before launching dash-licenses');
         process.exit(0);
     }
+    info('Running dash-licenses...');
     const dashStatus = spawn('java', args, {
         stdio: ['ignore', 'inherit', 'inherit']
     });
