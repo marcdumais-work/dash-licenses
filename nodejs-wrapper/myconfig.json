@@ -1,6 +1,6 @@
 {
     "inputFile": "package-lock.json",
-    "project": "zzzecd.cdt-cloudzzz",
+    "project": "ecd.theia",
     "review": false,
     "exclusions": "dashLicensesExclusions.json",
     "summary": "dependency-check-summary.txt",
