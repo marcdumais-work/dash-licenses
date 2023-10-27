@@ -1,10 +1,50 @@
-# dash-licenses-github-integration
+# dash-licenses-wrapper
 
-npm package that makes it easier to integrate dash-licenses to Eclipse Foundation JavaScript/TypeScript projects on GitHub.
+This npm package makes it easier to integrate [dash-licenses](https://github.com/eclipse/dash-licenses) to Eclipse Foundation JavaScript/TypeScript projects, including running license checks during CI on GitHub, e.g. on pull requests. The later is the best way to catch 3PP components that have incompatible or unclear licenses. Optionally, `dash-licenses` can run in `review` mode, to automatically create IP Check tickets, on the Eclipse Foundation Gitlab instance, one for each 3PP component that fails the check, for further scrutiny.
 
 ## How to use
 
-This npm package contains a `check_3pp_licenses.js` script that serves as frontend to `dash-licenses`, an example GitHub workflow that uses it and sample "scripts" entries, that one can add to their project's `package.json` to call the script.
+This npm package contains a `check_3pp_licenses.js` script that serves as frontend to `dash-licenses`, an example GitHub workflow that uses it and some example configuration files.
+
+To install this package, as a "devDependency" in your project, use one of the following:
+
+```bash
+npm install dash-licenses-wrapper --save-dev
+yarn add dash-licenses-wrapper --save-dev
+```
+
+Once installed, you can run the license check with:
+
+```bash
+  npx dash-licenses-wrapper --inputFile=./package-lock.json   # using npm lock file
+  npx dash-licenses-wrapper --inputFile=./yarn.lock           # using yarn lock file
+```
+
+To get help about using the wrapper, do:
+
+```bash
+  npx dash-licenses-wrapper --help
+```
+
+It's suggested to add a `scripts` entry in the project's root `package.json`, that calls this wrapper, with the correct parameters. For example:
+
+`npm` project:
+
+```json
+"scripts": {
+  "license:check": "npm run dash-licenses-wrapper --inputFile=./package-lock.json",
+  "license:check:review": "npm run dash-licenses-wrapper --inputFile=./package-lock.json --review",
+[...]
+```
+
+`yarn` project:
+
+```json
+"scripts": {
+  "license:check": "yarn run dash-licenses-wrapper --inputFile=./yarn.lock",
+  "license:check:review": "yarn run dash-licenses-wrapper --inputFile=./yarn.lock --review",
+[...]
+```
 
 ## Runtime requirements
 
@@ -26,8 +66,8 @@ A configuration file can be used to override defaults.
     "inputFile": "./package-lock.json",
     "batch": "50",
     "timeout": "240",
-    "exclusionsFile": "./dashLicensesExclusions.json",
-    "summaryFile": "summary.txt"
+    "exclusionsFile": "dashLicensesExclusions.json",
+    "summaryFile": "dash-licenses-summary.txt"
 }
 ```
 

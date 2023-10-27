@@ -21,8 +21,8 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-// const NO_COLOR = Boolean(process.env['NO_COLOR']);
 let noColor = Boolean(process.env['NO_COLOR']);
+const execName = path.basename(process.argv[1]);
 
 /** JSON.Stringify() "replacer", used to print objects in this script in human-friendly form */
 const regExpReplacer = (key, value) => {
@@ -250,7 +250,7 @@ async function main() {
 }
 
 function printHelp() {
-    help('Usage: check_3pp_licenses.js --inputFile=<file> [options]');
+    help(`Usage: ${execName} --inputFile=<file> [options]`);
     help('Mandatory:');
     help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
     help('                                 e.g. a project\'s "yarn.lock" or "package-lock.json"');

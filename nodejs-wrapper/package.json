@@ -4,7 +4,7 @@
   "description": "Node.js wrapper for dash-licenses, that makes it easier to perform license checks for Js/TS Eclipse Foundation projects",
   "main": "src/check_3pp_licenses.js",
   "bin": {
-    "license-check": "src/check_3pp_licenses.js"
+    "dash-licenses-wrapper": "src/check_3pp_licenses.js"
   },
   "scripts": {
     "license:check": "src/check_3pp_licenses.js", 
