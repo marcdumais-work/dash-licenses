@@ -24,7 +24,7 @@ const readline = require('readline');
 // const NO_COLOR = Boolean(process.env['NO_COLOR']);
 let noColor = Boolean(process.env['NO_COLOR']);
 
-/** JSON.Stringify() replacer that handles regexps */
+/** JSON.Stringify() "replacer", used to print objects in this script in human-friendly form */
 const regExpReplacer = (key, value) => {
     if (value instanceof RegExp) {
       return value.toString();
@@ -35,30 +35,46 @@ const dashLicensesJar = path.resolve(__dirname, 'download/dash-licenses.jar');
 const dashLicensesDownloadUrl = 'https://repo.eclipse.org/service/local/artifact/maven/redirect?r=dash-licenses&g=org.eclipse.dash&a=org.eclipse.dash.licenses&v=LATEST';
 const dashLicensesInternalError = 127;
 
-// CLI parameters meant to be passed when calling dash-licenses
-// const dashParams = [
-//     "batch",
-//     "project",
-//     "review",
-//     "summary",
-//     "timeout",
-// ];
+const unsupportedCLIDefault = "Unsupported CLI arg";
+const dashUnsupportedCLI = {
+    "cd": unsupportedCLIDefault,
+    "clearly-defined-api": unsupportedCLIDefault,
+    "confidence": unsupportedCLIDefault,
+    "ef": unsupportedCLIDefault,
+    "foundation-api": unsupportedCLIDefault,
+    "lic": unsupportedCLIDefault,
+    "license": unsupportedCLIDefault,
+    "token": unsupportedCLIDefault + ", for security reasons. Use an environment variable or GitHub secret instead",
+};
 
-// CLI parameters accepted/processed by this script, and corresponding 
+// CLI parameters processed by this script, and corresponding 
 // Regexps to parse them and their values
 const wrapperCLIRegexps = {
+    // supported, wrapper-specific
     "configFile": /--(configFile)=(\S+).*/,
-    "batch": /--(batch)=(\d+).*/,
     "debug": /--(debug)/,
     "dryRun": /--(dryRun)/,
     "exclusions": /--(exclusions)=(\S+).*/,
     "help": /--(help)/,
     "inputFile": /--(inputFile)=(\S+).*/,
     "noColor": /--(noColor)/,
+    
+    // supported, passed to dash-licenses
+    "batch": /--(batch)=(\d+).*/,
     "project": /--(project)=(\S+).*/,
     "review": /--(review)/,
     "summary": /--(summary)=(\S+).*/,
-    "timeout": /--(timeout)=(\d+).*/
+    "timeout": /--(timeout)=(\d+).*/,
+
+    // parsed but unsupported, from here down
+    "cd": /--(cd)=(\S+).*/,
+    "clearly-defined-api": /--(clearly-defined-api)=(\S+).*/,
+    "confidence": /--(confidence)=(\d+)/,
+    "ef": /--(ef)=(\S+).*/,
+    "foundation-api": /--(foundation-api)=(\S+).*/,
+    "lic": /--(lic)=(\S).*/,
+    "license": /--(license)=(\S).*/,
+    "token": /--(token)=(\S).*/
 };
 
 /** Effective configuration, after resolving defaults, config file and CLI */
@@ -70,33 +86,33 @@ const dashLicensesConfig = {};
  * should be used 
  */
 const dashLicensesConfigDefaults = {
-    /** Batch size. Passed as-is to dash-licenses */
+    /** batch size. Passed as-is to dash-licenses */
     "batch": 50,
     /** default config file, to fine-tune dash-licenses options */
     "configFile": "dashLicensesConfig.json",
-    /** run this script in debug mode, printing-out more information? */ 
+    /** run this script in debug mode, printing-out more information */ 
     "debug": false,
-    /** Run in dry run mode - do not create IP tickets */
+    /** run in dry run mode - do not create IP tickets */
     "dryRun": false,
     /** 
-     * File where exclusions are defined. Excluded 3PPs will be ignored, if 
+     * file where exclusions are defined. Excluded 3PPs will be ignored, if 
      * reported by dash-licenses, and so will not cause this script to exit with 
      * an error status
      */
-    "exclusions": "dependency-check-exclusions.json",
-    /** Display help and exit */
+    "exclusions": "license-check-exclusions.json",
+    /** display help and exit */
     "help": false,
-    /** File where dependencies are defined. Passed as-is to dash-licenses */
+    /** file where dependencies are defined. Passed as-is to dash-licenses */
     "inputFile": "yarn.lock",
-    /** Disable usage of color in this script's output */
+    /** disable usage of color in this script's output */
     "noColor": false,
-    /** Eclipse Foundation project name. e.g. "ecd.theia", "ecd.cdt-cloud" */
+    /** eclipse Foundation short project name. e.g. "ecd.theia", "ecd.cdt-cloud" */
     "project": "",
-    /** Use dash-license "review" mode, to automatically create IP tickets for any suspicious dependencies?  */
+    /** use dash-license "review" mode, to automatically create IP tickets for any suspicious dependencies?  */
     "review": false,
-    /** Summary file, in which dash-licenses will save its findings */
-    "summary": "dependency-check-summary.txt",
-    /** Timeout. Passed as-is to dash-licenses */
+    /** summary file, in which dash-licenses will save its findings */
+    "summary": "license-check-summary.txt",
+    /** timeout. Passed as-is to dash-licenses */
     "timeout": 240
 };
 
@@ -105,13 +121,13 @@ resolveConfig();
 // review mode has further requirements (PAT) that may force us to turn it off, even if
 // requested
 let autoReviewMode = dashLicensesConfig.review;
-const projectName = dashLicensesConfig.project;
-const depsInputFile = dashLicensesConfig.inputFile;
 const batch = dashLicensesConfig.batch;
-const timeout = dashLicensesConfig.timeout;
-const summaryFile = path.resolve(dashLicensesConfig.summary);
-const exclusionsFile = dashLicensesConfig.exclusions;
+const depsInputFile = dashLicensesConfig.inputFile;
 const dryRun = dashLicensesConfig.dryRun;
+const exclusionsFile = dashLicensesConfig.exclusions;
+const projectName = dashLicensesConfig.project;
+const summaryFile = path.resolve(dashLicensesConfig.summary);
+const timeout = dashLicensesConfig.timeout;
 
 // A Eclipse Foundation Gitlab Personal Access Token, generated by an Eclipse committer,
 // is required to use dash-licenses in "review" mode. For more information see:
@@ -136,7 +152,7 @@ async function main() {
         error(`Input file not found: ${depsInputFile}. Please provide it using "--inputFile=" CLI option`);
         process.exit(1);
     }
-    info('Using input file: ' + depsInputFile);
+    info(`Using input file: ${depsInputFile} - found`);
     if (autoReviewMode && !isPersonalAccessTokenSet) {
         warn('Please setup an Eclipse Foundation Gitlab Personal Access Token to run the license check in "review" mode');
         warn('It should be set in an environment variable named "DASH_TOKEN"');
@@ -234,28 +250,28 @@ async function main() {
 function printHelp() {
     help('Usage: check_3pp_licenses.js [options]');
     help('Options:');
-    help('  --batch=<number>                  Batch size. Passed as-is to dash-licenses');
-    help('  --configFile=<file>               Default config file, to fine-tune dash-licenses options');
-    help('  --debug                           Run this script in debug mode, printing-out more information?');
-    help('  --dryRun                          Run in dry run mode - do not create IP tickets');
-    help('  --exclusions=<file>               File where exclusions are defined. Excluded 3PPs will be ignored,'); 
-    help('                                    if reported by dash-licenses, and so will not cause this script to exit');
-    help('                                    with an error status');
-    help('  --help                            Display this help message and exit');
-    help('  --inputFile=<file>                File where dependencies are defined. Passed as-is to dash-licenses');
-    help('  --project=<name>                  Eclipse Foundation project name. e.g. "ecd.theia", "ecd.cdt-cloud"');
-    help('  --review                          Use dash-license "review" mode, to automatically create IP tickets for');
-    help ('                                   any suspicious dependencies?'); 
-    help('  --summary=<file>                  Summary file, in which dash-licenses will save its findings');
-    help('  --timeout=<number>                Timeout. Passed as-is to dash-licenses');
-    help('  --no-color                        Disable color output');
-    help('  --verbose                         Print verbose output');
+    help('  --batch=<number>               Batch size. Passed as-is to dash-licenses');
+    help('  --configFile=<file>            Default config file, to fine-tune dash-licenses options');
+    help('  --debug                        Run this script in debug mode, printing-out more information');
+    help('  --dryRun                       Run in dry run mode - do not create IP tickets');
+    help('  --exclusions=<file>            File where exclusions are defined. Excluded 3PPs will be ignored,'); 
+    help('                                 if reported by dash-licenses, and so will not cause this script to exit');
+    help('                                 with an error status');
+    help('  --help                         Display this help message and exit');
+    help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
+    help('  --project=<name>               Eclipse Foundation short project name. e.g. "ecd.theia", "ecd.cdt-cloud"');
+    help('  --review                       Use dash-license "review" mode, to automatically create IP tickets for');
+    help('                                 dependencies whose license require more scrutiny');
+    help('  --summary=<file>               Summary file, in which dash-licenses will save its findings');
+    help('  --timeout=<number>             Timeout. Passed as-is to dash-licenses');
+    help('  --noColor                      Disable color output');
+    // help('  --verbose                      Print verbose output');
     help('');
     help('Examples:');
-    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=dependency-check-summary.txt');
-    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=dependency-check-summary.txt --review');
-    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=dependency-check-summary.txt --review --project=ecd.theia');
-    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=dependency-check-summary.txt --review --project=ecd.theia --exclusions=dependency-check-exclusions.json');
+    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=license-check-summary.txt');
+    help('  check_3pp_licenses.js --inputFile=package-lock.json --summary=license-check-summary.txt --review');
+    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=license-check-summary.txt --review --project=ecd.theia');
+    help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=license-check-summary.txt --review --project=ecd.theia --exclusions=license-check-exclusions.json');
 }
 
 function getPrintableConfig(configObj) {
@@ -292,6 +308,8 @@ function resolveConfig() {
         dashLicensesConfig[k] = (CLIValue || configFileValue || defaultValue);
     });
 
+    // "no color" can also be configured in an environment variable:
+    // see: https://no-color.org/
     if (dashLicensesConfig.noColor || Boolean(process.env['NO_COLOR'])) {
         noColor = true;
     }
@@ -301,18 +319,15 @@ function resolveConfig() {
         process.exit(0);
     }
 
-    if (dashLicensesConfig.debug) {
-        debug("Parsed config file: ");
-        debug(`(From file: ${configFile})`);
-        debug("-------------------------------------");
-        debug(getPrintableConfig(configFromFile));
-        debug("-------------------------------------\n");
-
-        debug("Parsed CLI:");
-        debug("-------------------------------------");
-        debug(getPrintableConfig(configFromCLI));
-        debug("-------------------------------------\n");
-    }
+    debug("Parsed config file: ");
+    debug(`(From file: ${configFile})`);
+    debug("-------------------------------------");
+    debug(getPrintableConfig(configFromFile));
+    debug("-------------------------------------\n");
+    debug("Parsed CLI:");
+    debug("-------------------------------------");
+    debug(getPrintableConfig(configFromCLI));
+    debug("-------------------------------------\n");
     info("Effective configuration: ");
     info("-------------------------------------");
     info(getPrintableConfig(dashLicensesConfig));
@@ -366,8 +381,13 @@ function parseCLI(CLIArgs) {
             if(RegexpResult) {
                 // parse arg - some have no "value" part
                 const [arg, val] = CLIArg.replace(rx, (_, group1, group2) => group2 ? `${group1} ${group2}` : group1).split(' ');
-                configFromCLI[arg] = val || true;
-                // found the right regexp - find() should stop looking
+                // Do not handle unsupported args:
+                if (arg in dashUnsupportedCLI) {
+                    warn(dashUnsupportedCLI[arg] + ": \n\t-> " + red(arg));
+                } else {
+                    configFromCLI[arg] = val || true;
+                }
+                // found matching regexp - find() should stop looking
                 return RegexpResult;
             }
         }) ? true : false;
@@ -384,7 +404,6 @@ function parseCLI(CLIArgs) {
 
     return configFromCLI;
 }
-
 /**
  * @param {Iterable<DashSummaryEntry>} entries
  * @return {void}
@@ -501,7 +520,7 @@ function prettyCommand(status, indent = 2) {
 function info(text) { console.warn(cyan(`INFO: ${text}`)); }
 function warn(text) { console.warn(yellow(`WARN: ${text}`)); }
 function error(text) { console.error(red(`ERROR: ${text}`)); }
-function debug(text) { console.error(gray(`DEBUG: ${text}`)); }
+function debug(text) { if (dashLicensesConfig.debug) { console.warn(gray(`DEBUG: ${text}`)); } }
 function help(text) { console.warn(green(`${text}`)); }
 
 function style(code, text) { return noColor ? text : `\x1b[${code}m${text}\x1b[0m`; }
