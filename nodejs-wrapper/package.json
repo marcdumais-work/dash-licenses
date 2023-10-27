@@ -1,7 +1,7 @@
 {
-  "name": "dash-licenses-github-integration",
-  "version": "1.0.12",
-  "description": "npm package that makes it easier to integrate dash-licenses to Eclipse Foundation JS/TS projects on GitHub",
+  "name": "dash-licenses-wrapper",
+  "version": "1.0.0",
+  "description": "Node.js wrapper for dash-licenses, that makes it easier to perform license checks for Js/TS Eclipse Foundation projects",
   "main": "src/check_3pp_licenses.js",
   "bin": {
     "license-check": "src/check_3pp_licenses.js"
@@ -17,14 +17,16 @@
     "url": "git+https://github.com/eclipse/dash-licenses.git"
   },
   "keywords": [
-    "GitHub",
-    "dash-license",
-    "integration"
+    "dash-licenses",
+    "wrapper",
+    "license check",
+    "GitHub workflow",
+    "Eclipse Foundation"
   ],
   "author": "Ericsson and others",
   "license": "EPL-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0",
   "bugs": {
     "url": "https://github.com/eclipse/dash-licenses/issues"
   },
-  "homepage": "https://github.com/eclipse/dash-licenses#readme"
+  "homepage": "https://github.com/eclipse/dash-licenses/nodejs-wrapper#readme"
 }

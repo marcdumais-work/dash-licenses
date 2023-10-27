@@ -36,6 +36,7 @@ const dashLicensesDownloadUrl = 'https://repo.eclipse.org/service/local/artifact
 const dashLicensesInternalError = 127;
 
 const unsupportedCLIDefault = "Unsupported CLI arg";
+/** CLI parameters parsed but not currently supported, so they will not be passed to dash-licenses */
 const dashUnsupportedCLI = {
     "cd": unsupportedCLIDefault,
     "clearly-defined-api": unsupportedCLIDefault,
@@ -66,7 +67,8 @@ const wrapperCLIRegexps = {
     "summary": /--(summary)=(\S+).*/,
     "timeout": /--(timeout)=(\d+).*/,
 
-    // parsed but unsupported, from here down
+    // parsed but unsupported, from here down,
+    // not passed to dash-licenses
     "cd": /--(cd)=(\S+).*/,
     "clearly-defined-api": /--(clearly-defined-api)=(\S+).*/,
     "confidence": /--(confidence)=(\d+)/,
@@ -81,7 +83,7 @@ const wrapperCLIRegexps = {
 const dashLicensesConfig = {};
 
 /**
- * Default values for configurable parameters
+ * Supported Configurable parameters and their default values
  * Note: We do not handle the Gitlab token. Instead, an environment variable 
  * should be used 
  */
@@ -248,24 +250,25 @@ async function main() {
 }
 
 function printHelp() {
-    help('Usage: check_3pp_licenses.js [options]');
+    help('Usage: check_3pp_licenses.js --inputFile=<file> [options]');
+    help('Mandatory:');
+    help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
+    help('                                 e.g. a project\'s "yarn.lock" or "package-lock.json"');
     help('Options:');
     help('  --batch=<number>               Batch size. Passed as-is to dash-licenses');
-    help('  --configFile=<file>            Default config file, to fine-tune dash-licenses options');
+    help('  --configFile=<file>            Config file, to fine-tune dash-licenses options');
     help('  --debug                        Run this script in debug mode, printing-out more information');
     help('  --dryRun                       Run in dry run mode - do not create IP tickets');
     help('  --exclusions=<file>            File where exclusions are defined. Excluded 3PPs will be ignored,'); 
     help('                                 if reported by dash-licenses, and so will not cause this script to exit');
     help('                                 with an error status');
     help('  --help                         Display this help message and exit');
-    help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
-    help('  --project=<name>               Eclipse Foundation short project name. e.g. "ecd.theia", "ecd.cdt-cloud"');
+    help('  --noColor                      Disable color output');
+    help('  --project=<name>               Eclipse Foundation short project name. e.g. "ecd.theia", "technology.dash"');
     help('  --review                       Use dash-license "review" mode, to automatically create IP tickets for');
     help('                                 dependencies whose license require more scrutiny');
     help('  --summary=<file>               Summary file, in which dash-licenses will save its findings');
     help('  --timeout=<number>             Timeout. Passed as-is to dash-licenses');
-    help('  --noColor                      Disable color output');
-    // help('  --verbose                      Print verbose output');
     help('');
     help('Examples:');
     help('  check_3pp_licenses.js --inputFile=yarn.lock --summary=license-check-summary.txt');
@@ -381,7 +384,7 @@ function parseCLI(CLIArgs) {
             if(RegexpResult) {
                 // parse arg - some have no "value" part
                 const [arg, val] = CLIArg.replace(rx, (_, group1, group2) => group2 ? `${group1} ${group2}` : group1).split(' ');
-                // Do not handle unsupported args:
+                // Do not handle unsupported CLI args:
                 if (arg in dashUnsupportedCLI) {
                     warn(dashUnsupportedCLI[arg] + ": \n\t-> " + red(arg));
                 } else {
