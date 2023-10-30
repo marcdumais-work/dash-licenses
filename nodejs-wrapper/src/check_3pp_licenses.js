@@ -45,7 +45,7 @@ const dashUnsupportedCLI = {
     "foundation-api": unsupportedCLIDefault,
     "lic": unsupportedCLIDefault,
     "license": unsupportedCLIDefault,
-    "token": unsupportedCLIDefault + ", for security reasons. Use an environment variable or GitHub secret instead",
+    "token": unsupportedCLIDefault + "- for security reasons, use an environment variable or GitHub secret instead"
 };
 
 // CLI parameters processed by this script, and corresponding 
@@ -89,7 +89,7 @@ const dashLicensesConfig = {};
  */
 const dashLicensesConfigDefaults = {
     /** batch size. Passed as-is to dash-licenses */
-    "batch": 50,
+    "batch": 100,
     /** default config file, to fine-tune dash-licenses options */
     "configFile": "dashLicensesConfig.json",
     /** run this script in debug mode, printing-out more information */ 
@@ -115,7 +115,7 @@ const dashLicensesConfigDefaults = {
     /** summary file, in which dash-licenses will save its findings */
     "summary": "license-check-summary.txt",
     /** timeout. Passed as-is to dash-licenses */
-    "timeout": 240
+    "timeout": 30
 };
 
 resolveConfig();
