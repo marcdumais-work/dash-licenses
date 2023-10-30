@@ -48,6 +48,6 @@ jobs:
         if: matrix.tests != 'skip'
         shell: bash
         run: |
-          npx dash-licenses --configFile=./yarn.lock --project=<your project"
+          npx dash-licenses --inputFile=./yarn.lock --project=<your project> --review"
         env:
           DASH_TOKEN: ${{ secrets.DASH_LICENSES_PAT }}

@@ -1,9 +1,0 @@
-{
-    "inputFile": "package-lock.json",
-    "project": "ecd.theia",
-    "review": false,
-    "exclusions": "dashLicensesExclusions.json",
-    "summary": "dependency-check-summary.txt",
-    "timeout": 242,
-    "batch": 52
-}
