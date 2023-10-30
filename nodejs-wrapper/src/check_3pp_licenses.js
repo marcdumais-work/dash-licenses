@@ -158,13 +158,13 @@ async function main() {
     if (autoReviewMode && !isPersonalAccessTokenSet) {
         warn('Please setup an Eclipse Foundation Gitlab Personal Access Token to run the license check in "review" mode');
         warn('It should be set in an environment variable named "DASH_TOKEN"');
-        warn('Proceeding in normal mode since the PAT is not currently set');
+        warn('Proceeding without auto review since the PAT is not currently set');
         autoReviewMode = false;
     }
     if (autoReviewMode && !projectName) {
         warn('Please provide a valid Eclipse Foundation project name to run the license check in "review" mode');
         warn('You can pass it using the "--project=" CLI parameter');
-        warn('Proceeding in normal (non-review) mode since the PAT is not currently set');
+        warn('Proceeding without auto review, since the project is not currently set');
         autoReviewMode = false;
     }
     if (!fs.existsSync(dashLicensesJar)) {
