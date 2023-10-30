@@ -1,16 +1,13 @@
 {
   "name": "dash-licenses-wrapper",
   "version": "1.0.0",
-  "description": "Node.js wrapper for dash-licenses, that makes it easier to perform license checks for Js/TS Eclipse Foundation projects",
+  "description": "Node.js wrapper for dash-licenses, that makes it easier to perform license checks for JS/TS Eclipse Foundation projects",
   "main": "src/check_3pp_licenses.js",
   "bin": {
     "dash-licenses-wrapper": "src/check_3pp_licenses.js"
   },
   "scripts": {
-    "license:check": "src/check_3pp_licenses.js", 
-    "license:check:review": "src/check_3pp_licenses.js --inputFile=./yarn.lock --review --project=ecd.cdt-cloud", 
-    "test": "test",
-    "package": "npm pack"
+    "test": "test"
   },
   "repository": {
     "type": "git",

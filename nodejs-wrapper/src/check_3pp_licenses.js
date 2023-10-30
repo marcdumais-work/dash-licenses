@@ -250,10 +250,7 @@ async function main() {
 }
 
 function printHelp() {
-    help(`Usage: ${execName} --inputFile=<file> [options]`);
-    help('Mandatory:');
-    help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
-    help('                                 e.g. a project\'s "yarn.lock" or "package-lock.json"');
+    help(`Usage: ${execName} [options]`);
     help('Options:');
     help('  --batch=<number>               Batch size. Passed as-is to dash-licenses');
     help('  --configFile=<file>            Config file, to fine-tune dash-licenses options');
@@ -263,6 +260,8 @@ function printHelp() {
     help('                                 if reported by dash-licenses, and so will not cause this script to exit');
     help('                                 with an error status');
     help('  --help                         Display this help message and exit');
+    help('  --inputFile=<file>             File where dependencies are defined. Passed as-is to dash-licenses');
+    help('                                 e.g. a project\'s "yarn.lock" or "package-lock.json". Default: "yarn.lock"');
     help('  --noColor                      Disable color output');
     help('  --project=<name>               Eclipse Foundation short project name. e.g. "ecd.theia", "technology.dash"');
     help('  --review                       Use dash-license "review" mode, to automatically create IP tickets for');

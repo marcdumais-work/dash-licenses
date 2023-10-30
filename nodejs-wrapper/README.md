@@ -13,11 +13,15 @@ This npm package makes it easier to integrate [dash-licenses](https://github.com
 
 This npm package contains a `check_3pp_licenses.js` script that serves as frontend to `dash-licenses`, an example GitHub workflow that uses it and some example configuration files.
 
-To install this package as a "devDependency" in your project, use one of the following:
+To install this package as a "devDependency" in your project, use one of the following from the root, according to the project's npm client:
 
 ```bash
+# npm:
 npm install dash-licenses-wrapper --save-dev
-yarn add dash-licenses-wrapper --save-dev
+
+# yarn:
+# note: if prompted to do so, you may need to add option "--ignore-workspace-root-check"
+yarn add dash-licenses-wrapper --dev
 ```
 
 Once installed, you can run the license check, from the repo root, with the following command:
@@ -56,9 +60,8 @@ It's suggested to add one or more `scripts` entries in the project's root `packa
 
 It's possible to use a configuration file instead of adding all wanted options on the CLI. See section below for the details about configuration files.
 
-```json
-"scripts": {
-  "license:check": "yarn run dash-licenses-wrapper --configFile=./configs/license-check-config.json",
+```bash
+npx dash-licenses-wrapper --configFile=./configs/license-check-config.json
 ```
 
 ## configuration file
